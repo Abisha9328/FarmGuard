@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FarmGuard AI – Live Demo</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sora:wght@400;600;700;800&display=swap');
+:root{
+  --bg:#08141A; --card:#0A1E14; --green:#1B4332;
+  --teal:#028090; --mint:#02C39A; --yel:#F4C430;
+  --red:#E63946; --white:#EEF5F2; --gray:#7A9490;
+  --bdr:#153025; --mono:'JetBrains Mono',monospace; --sans:'Sora',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--white);font-family:var(--sans);min-height:100vh}
+ 
+/* HEADER */
+header{
+  background:var(--green);border-bottom:2px solid var(--mint);
+  padding:11px 16px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+.logo-title{font-size:14px;font-weight:800}
+.logo-sub{font-size:10px;color:var(--mint);font-family:var(--mono)}
+.hdr-r{text-align:right}
+.sys-dot{display:flex;align-items:center;gap:5px;font-size:10px;font-family:var(--mono);color:var(--mint);justify-content:flex-end}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--mint);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+#clock{font-size:10px;color:var(--gray);font-family:var(--mono)}
+ 
+/* ALERT BANNER */
+#alertBanner{
+  display:none;background:var(--red);padding:11px 16px;
+  text-align:center;font-weight:700;font-size:13px;letter-spacing:.3px;
+  animation:shake .4s;
+}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+ 
+/* DISTANCE HERO */
+.hero{margin:14px 14px 0;background:var(--card);border:1px solid var(--bdr);border-radius:14px;padding:18px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;left:0;top:0;width:4px;height:100%;background:var(--mint);border-radius:4px 0 0 4px}
+.hero-label{font-size:10px;font-family:var(--mono);color:var(--gray);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
+.hero-dist{font-size:56px;font-weight:800;font-family:var(--mono);line-height:1;transition:color .4s}
+.hero-dist span{font-size:22px;font-weight:400;color:var(--gray)}
+.hero-msg{font-size:12px;font-family:var(--mono);margin-top:6px;min-height:16px;color:var(--gray);transition:color .3s}
+ 
+/* DISTANCE BAR */
+.dbar-wrap{margin-top:14px}
+.dbar-outer{height:12px;background:#060e06;border-radius:6px;position:relative;overflow:visible}
+.dbar-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--red),var(--yel) 50%,var(--mint));width:100%}
+.dbar-pointer{
+  position:absolute;top:50%;width:20px;height:20px;border-radius:50%;
+  background:var(--white);border:3px solid var(--teal);
+  transform:translate(-50%,-50%);transition:left .7s cubic-bezier(.4,0,.2,1);left:100%;z-index:2;
+}
+.dbar-legs{display:flex;justify-content:space-between;margin-top:5px;font-size:9px;font-family:var(--mono)}
+ 
+/* SENSOR PILLS */
+.pills{display:flex;gap:7px;margin-top:13px;flex-wrap:wrap}
+.pill{padding:5px 10px;border-radius:20px;font-size:10px;font-family:var(--mono);font-weight:700;background:#0d1f14;border:1px solid var(--bdr);color:var(--gray);transition:all .35s}
+.pill.on{background:#062510;border-color:var(--mint);color:var(--mint)}
+.pill.hot{background:#200808;border-color:var(--red);color:var(--red);animation:blink .8s infinite}
+.pill.warn{background:#1e1500;border-color:var(--yel);color:var(--yel)}
+ 
+/* WORKFLOW STEPS */
+.steps-section{margin:14px 14px 0}
+.sec-title{font-size:10px;font-family:var(--mono);color:var(--mint);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px}
+.step{
+  display:flex;align-items:flex-start;gap:11px;
+  padding:11px 13px;border-radius:10px;margin-bottom:8px;
+  background:var(--card);border:1px solid var(--bdr);
+  border-left:3px solid var(--bdr);opacity:.45;
+  transition:all .4s;
+}
+.step.active{opacity:1;border-left-color:var(--mint);background:#071a0f}
+.step.done{opacity:.7;border-left-color:var(--teal)}
+.step.alert-step{border-left-color:var(--red);background:#160606;opacity:1}
+.step-num{
+  width:28px;height:28px;border-radius:50%;border:2px solid var(--bdr);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;font-family:var(--mono);color:var(--gray);
+  flex-shrink:0;transition:all .4s;
+}
+.step.active .step-num{border-color:var(--mint);color:var(--mint);background:#062510}
+.step.done .step-num{border-color:var(--teal);color:var(--teal)}
+.step.alert-step .step-num{border-color:var(--red);color:var(--red);background:#200808}
+.step-body{}
+.step-title{font-size:13px;font-weight:700;margin-bottom:2px}
+.step-desc{font-size:11px;color:var(--gray);font-family:var(--mono);line-height:1.5}
+.step-output{
+  display:none;margin-top:7px;background:#030c06;border-radius:6px;
+  padding:8px 10px;font-size:11px;font-family:var(--mono);color:var(--mint);border-left:2px solid var(--mint);
+}
+.step.active .step-output,.step.done .step-output,.step.alert-step .step-output{display:block}
+ 
+/* ANIMAL DETECTION CARD */
+.detect-card{
+  margin:12px 14px 0;background:var(--card);border:1px solid var(--red);
+  border-radius:14px;padding:16px;display:none;
+}
+.detect-card.show{display:block;animation:slideUp .4s ease}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.det-top{display:flex;align-items:center;gap:14px}
+.det-emoji{font-size:52px;line-height:1}
+.det-name{font-size:26px;font-weight:800}
+.det-dist{font-size:12px;font-family:var(--mono);color:var(--red);font-weight:700;margin-top:2px}
+.det-time{font-size:11px;color:var(--gray);font-family:var(--mono)}
+.conf-label-row{display:flex;justify-content:space-between;font-size:11px;font-family:var(--mono);margin:13px 0 5px}
+.conf-outer{background:#060e06;border-radius:5px;height:9px;overflow:hidden}
+.conf-fill{height:100%;border-radius:5px;background:var(--red);width:0%;transition:width .4s}
+.det-badges{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+.dbadge{padding:5px 11px;border-radius:5px;font-size:11px;font-family:var(--mono);font-weight:700}
+ 
+/* MAP */
+.map-section{margin:12px 14px 0}
+.map-wrap{background:#040d07;border:1px solid var(--bdr);border-radius:12px;position:relative;height:220px;overflow:hidden}
+.mgrid{position:absolute;inset:0;background-image:linear-gradient(rgba(2,192,154,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(2,192,154,.07) 1px,transparent 1px);background-size:25px 25px}
+.farm-box{position:absolute;border:2px dashed rgba(2,192,154,.55);border-radius:5px;top:28%;left:25%;width:50%;height:44%;display:flex;align-items:center;justify-content:center}
+.farm-lbl{font-size:9px;font-family:var(--mono);color:rgba(2,192,154,.5);letter-spacing:1px}
+.range-ring{position:absolute;border:1px dashed rgba(244,196,48,.3);border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);width:88%;height:94%;animation:ringP 3s infinite}
+@keyframes ringP{0%,100%{opacity:.3}50%{opacity:.6}}
+.c-dot{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--teal);top:50%;left:50%;transform:translate(-50%,-50%)}
+.snode{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--teal);transform:translate(-50%,-50%)}
+.snode::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:1px solid var(--teal);animation:rip 2.5s infinite;opacity:.4}
+@keyframes rip{0%{transform:scale(1);opacity:.4}100%{transform:scale(2.8);opacity:0}}
+.animal-mdot{position:absolute;width:16px;height:16px;border-radius:50%;background:var(--red);transform:translate(-50%,-50%);display:none;transition:left .7s ease,top .7s ease;z-index:5}
+.animal-mdot::after{content:'';position:absolute;inset:-5px;border-radius:50%;border:2px solid var(--red);animation:rip 1.5s infinite;opacity:.6}
+.map-dist-lbl{position:absolute;font-size:9px;font-family:var(--mono);color:var(--red);background:rgba(4,13,7,.85);padding:2px 6px;border-radius:3px;white-space:nowrap;display:none}
+.map-leg{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap}
+.leg{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--gray)}
+.ldot{width:8px;height:8px;border-radius:50%}
+ 
+/* BUTTONS */
+.btn-section{margin:12px 14px 0;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{padding:14px 8px;border-radius:10px;border:none;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center}
+.btn:active{transform:scale(.96);opacity:.85}
+.btn-red{background:var(--red);color:#fff}
+.btn-teal{background:var(--teal);color:#fff}
+.btn-outline{background:transparent;color:var(--mint);border:1.5px solid var(--mint)}
+.btn-yel{background:var(--yel);color:var(--bg)}
+.btn-full{grid-column:1/-1}
+ 
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 14px 0}
+.stat-box{background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:12px;text-align:center}
+.stat-n{font-size:30px;font-weight:800;font-family:var(--mono);color:var(--mint)}
+.stat-n.red{color:var(--red)} .stat-n.yel{color:var(--yel)}
+.stat-l{font-size:10px;color:var(--gray);font-family:var(--mono);margin-top:2px}
+ 
+/* LOG */
+.log-section{margin:12px 14px 0}
+.log-wrap{max-height:170px;overflow-y:auto}
+.log-wrap::-webkit-scrollbar{width:3px}
+.log-wrap::-webkit-scrollbar-thumb{background:var(--teal);border-radius:2px}
+.log-item{background:var(--card);border-left:3px solid var(--mint);border-radius:0 7px 7px 0;padding:9px 12px;margin-bottom:7px;animation:slideUp .35s ease}
+.log-item.d{border-left-color:var(--red)}
+.log-item.w{border-left-color:var(--yel)}
+.log-t{font-family:var(--mono);font-size:10px;color:var(--gray)}
+.log-m{font-weight:700;font-size:12px;margin-top:2px}
+.log-d{font-size:11px;color:var(--gray);margin-top:1px}
+ 
+/* TELEGRAM */
+.tg-notif{
+  position:fixed;bottom:16px;left:14px;right:14px;max-width:380px;margin:auto;
+  background:#162a1a;border:1px solid var(--mint);border-radius:14px;
+  padding:14px 16px;z-index:999;display:none;box-shadow:0 10px 40px rgba(0,0,0,.6);
+}
+.tg-notif.show{display:block;animation:slideUp .4s ease}
+.tg-head{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.tg-logo{font-size:22px}
+.tg-n{font-weight:800;font-size:13px;color:var(--mint)}
+.tg-a{font-size:10px;color:var(--gray)}
+.tg-body{font-size:12px;font-family:var(--mono);line-height:1.75;color:var(--white);white-space:pre-line}
+.tg-dismiss{margin-top:10px;width:100%;padding:9px;border-radius:7px;background:var(--green);border:none;color:var(--mint);font-family:var(--sans);font-weight:700;font-size:13px;cursor:pointer}
+ 
+footer{height:30px}
+</style>
+</head>
+<body>
+ 
+<div id="alertBanner"></div>
+ 
+<header>
+  <div>
+    <div class="logo-title">🌿 FarmGuard AI</div>
+    <div class="logo-sub">Animal Intrusion Detection System</div>
+  </div>
+  <div class="hdr-r">
+    <div class="sys-dot"><div class="dot"></div>SYSTEM ACTIVE</div>
+    <div id="clock">--:--:--</div>
+  </div>
+</header>
+ 
+<!-- DISTANCE HERO -->
+<div class="hero">
+  <div class="hero-label">📡 Animal Distance from Farm Boundary</div>
+  <div class="hero-dist" id="heroDist">— <span>m</span></div>
+  <div class="hero-msg" id="heroMsg">No animal detected · Monitoring 200m perimeter</div>
+  <div class="dbar-wrap">
+    <div class="dbar-outer">
+      <div class="dbar-fill"></div>
+      <div class="dbar-pointer" id="dbarPtr"></div>
+    </div>
+    <div class="dbar-legs">
+      <span style="color:var(--red)">🔴 0m · INSIDE</span>
+      <span style="color:var(--yel)">⚠ 100m</span>
+      <span style="color:var(--mint)">✅ 200m+ SAFE</span>
+    </div>
+  </div>
+  <div class="pills">
+    <div class="pill on" id="pAcoustic">🎙 ACOUSTIC: IDLE</div>
+    <div class="pill on" id="pMotion">📡 MOTION: STANDBY</div>
+    <div class="pill" id="pCamera">📷 CAMERA: OFF</div>
+    <div class="pill on" id="pGPS">🛰 GPS: LOCKED</div>
+  </div>
+</div>
+ 
+<!-- 7-STEP WORKFLOW -->
+<div class="steps-section">
+  <div class="sec-title">🔄 System Workflow (Live)</div>
+ 
+  <div class="step" id="step1">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <div class="step-title">🟢 Acoustic Detection (~200m)</div>
+      <div class="step-desc">Acoustic sensor picks up animal sound signature.<br>Early warning — animal still far from boundary.</div>
+      <div class="step-output" id="out1">⚠ Possible animal movement detected at ~200m</div>
+    </div>
+  </div>
+ 
+  <div class="step" id="step2">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <div class="step-title">🟡 Motion Confirmation</div>
+      <div class="step-desc">PIR sensor confirms real movement.<br>Reduces false alarms from wind or leaves.</div>
+      <div class="step-output" id="out2">✔ Movement confirmed · Not a false alarm</div>
+    </div>
+  </div>
+ 
+  <div class="step" id="step3">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <div class="step-title">🔵 Camera Activation</div>
+      <div class="step-desc">Camera activates automatically.<br>IR mode ON for night vision.</div>
+      <div class="step-output" id="out3">📷 Recording started · IR Mode active</div>
+    </div>
+  </div>
+ 
+  <div class="step" id="step4">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <div class="step-title">🧠 AI Processing (YOLO)</div>
+      <div class="step-desc">YOLO model analyzes image frame.<br>Identifies animal species with confidence score.</div>
+      <div class="step-output" id="out4">—</div>
+    </div>
+  </div>
+ 
+  <div class="step" id="step5">
+    <div class="step-num">5</div>
+    <div class="step-body">
+      <div class="step-title">🔴 Alert Dispatch</div>
+      <div class="step-desc">SMS + Telegram alert sent to farmer.<br>Location included (GPS coordinates).</div>
+      <div class="step-output" id="out5">—</div>
+    </div>
+  </div>
+ 
+  <div class="step" id="step6">
+    <div class="step-num">6</div>
+    <div class="step-body">
+      <div class="step-title">📣 Smart Notification</div>
+      <div class="step-desc">Farmer + Nearby farmers + Forest dept notified.<br>Works on SMS even without internet.</div>
+      <div class="step-output" id="out6">📱 Farmer · 👨‍🌾 Community · 🏛 Forest Dept notified</div>
+    </div>
+  </div>
+ 
+  <div class="step" id="step7">
+    <div class="step-num">7</div>
+    <div class="step-body">
+      <div class="step-title">💡 Deterrent Activated</div>
+      <div class="step-desc">Flash lights + sound alarm triggered.<br>Animal scared away safely — no harm.</div>
+      <div class="step-output" id="out7">🔊 Sound alarm ON · 💡 Flash lights ON · Animal retreating</div>
+    </div>
+  </div>
+</div>
+ 
+<!-- ANIMAL CARD (appears after AI step) -->
+<div class="detect-card" id="detectCard">
+  <div class="det-top">
+    <div class="det-emoji" id="detEmoji">🐘</div>
+    <div>
+      <div class="det-name" id="detName">Elephant</div>
+      <div class="det-dist" id="detDist">⚠ 178m from boundary — APPROACHING</div>
+      <div class="det-time" id="detTime">—</div>
+    </div>
+  </div>
+  <div class="conf-label-row">
+    <span style="color:var(--gray)">YOLO AI CONFIDENCE</span>
+    <span style="color:var(--red);font-weight:700" id="confNum">0%</span>
+  </div>
+  <div class="conf-outer"><div class="conf-fill" id="confFill"></div></div>
+  <div class="det-badges">
+    <div class="dbadge" style="background:#200808;color:var(--red)">🚨 HIGH RISK</div>
+    <div class="dbadge" style="background:#1e1500;color:var(--yel)" id="timeEst">⏱ ~4 min to boundary</div>
+    <div class="dbadge" style="background:#062510;color:var(--mint)">🔊 Deterrent FIRED</div>
+  </div>
+</div>
+ 
+<!-- MAP -->
+<div class="map-section">
+  <div class="sec-title">🗺 Live Farm Map</div>
+  <div class="map-wrap">
+    <div class="mgrid"></div>
+    <div class="range-ring"></div>
+    <div class="farm-box"><div class="farm-lbl">YOUR FARM</div></div>
+    <!-- 4 corner sensors at boundary -->
+    <div class="snode" style="top:28%;left:25%"></div>
+    <div class="snode" style="top:28%;left:75%"></div>
+    <div class="snode" style="top:72%;left:25%"></div>
+    <div class="snode" style="top:72%;left:75%"></div>
+    <div class="c-dot"></div>
+    <div class="animal-mdot" id="animalDot"></div>
+    <div class="map-dist-lbl" id="mapLbl"></div>
+  </div>
+  <div class="map-leg">
+    <div class="leg"><div class="ldot" style="background:var(--teal)"></div>Sensor</div>
+    <div class="leg"><div class="ldot" style="background:var(--red)"></div>Animal</div>
+    <div class="leg"><div class="ldot" style="border:1px dashed var(--yel);background:transparent"></div>200m Range</div>
+  </div>
+</div>
+ 
+<!-- SIMULATE BUTTONS -->
+<div class="btn-section">
+  <button class="btn btn-red" onclick="runDemo('Elephant','🐘',94,178)">🐘 Elephant<br><small>178m away</small></button>
+  <button class="btn btn-red" onclick="runDemo('Wild Boar','🐗',87,95)">🐗 Wild Boar<br><small>95m away</small></button>
+  <button class="btn btn-red" onclick="runDemo('Monkey','🐒',81,215)">🐒 Monkey<br><small>215m away</small></button>
+  <button class="btn btn-teal" onclick="resetAll()">🔄 Reset System</button>
+  <button class="btn btn-outline btn-full" onclick="testTg()">📱 Test Telegram Alert</button>
+</div>
+ 
+<!-- STATS -->
+<div class="stats-row">
+  <div class="stat-box"><div class="stat-n red" id="stDet">0</div><div class="stat-l">Detections</div></div>
+  <div class="stat-box"><div class="stat-n" id="stDeter">0</div><div class="stat-l">Deterrents</div></div>
+  <div class="stat-box"><div class="stat-n yel" id="stUptime">0s</div><div class="stat-l">Uptime</div></div>
+</div>
+ 
+<!-- LOG -->
+<div class="log-section">
+  <div class="sec-title" style="margin-top:0">📋 Alert Log</div>
+  <div class="log-wrap" id="logWrap">
+    <div class="log-item">
+      <div class="log-t" id="initT">--:--:--</div>
+      <div class="log-m">✅ System online — monitoring 200m perimeter</div>
+      <div class="log-d">Acoustic · Motion · Camera · GPS — all active</div>
+    </div>
+  </div>
+</div>
+ 
+<!-- TELEGRAM POPUP -->
+<div class="tg-notif" id="tgNotif">
+  <div class="tg-head">
+    <div class="tg-logo">✈️</div>
+    <div><div class="tg-n">FarmGuard Bot</div><div class="tg-a">Telegram · SMS Alert</div></div>
+  </div>
+  <div class="tg-body" id="tgBody"></div>
+  <button class="tg-dismiss" onclick="document.getElementById('tgNotif').classList.remove('show')">✓ Dismiss</button>
+</div>
+ 
+<footer></footer>
+ 
+<script>
+// Clock + uptime
+let startT = Date.now(), detCount = 0, deterCount = 0;
+function tick(){
+  const t = new Date().toLocaleTimeString();
+  document.getElementById('clock').textContent = t;
+  document.getElementById('initT').textContent = t;
+  const s = Math.floor((Date.now()-startT)/1000);
+  document.getElementById('stUptime').textContent = s<60?s+'s':Math.floor(s/60)+'m '+s%60+'s';
+}
+setInterval(tick, 1000); tick();
+ 
+// Distance bar: 200m = pointer at right (100%), 0m = left (0%)
+function setDist(dist){
+  const pct = dist === null ? 100 : Math.max(0, Math.min(100, dist/200*100));
+  document.getElementById('dbarPtr').style.left = pct+'%';
+  const el = document.getElementById('heroDist');
+  const msg = document.getElementById('heroMsg');
+  if(dist===null){
+    el.innerHTML='— <span>m</span>'; el.style.color='var(--white)';
+    msg.textContent='No animal detected · Monitoring 200m perimeter'; msg.style.color='var(--gray)';
+    return;
+  }
+  el.innerHTML=dist+' <span>m</span>';
+  if(dist>150){el.style.color='var(--mint)';msg.style.color='var(--mint)';msg.textContent='✅ Early detection — animal far outside boundary. Alert sent!'}
+  else if(dist>80){el.style.color='var(--yel)';msg.style.color='var(--yel)';msg.textContent='⚠ WARNING — Animal within 100m. Approaching boundary fast!'}
+  else{el.style.color='var(--red)';msg.style.color='var(--red)';msg.textContent='🚨 CRITICAL — Animal very close to farm boundary!'}
+}
+ 
+// Map: place animal outside farm, distance determines how far from center
+function placeOnMap(angleDeg, dist){
+  const dot = document.getElementById('animalDot');
+  const lbl = document.getElementById('mapLbl');
+  // farm is 50% wide centered at 50%,50%
+  // 0m = farm edge (~25% from center), 200m = map edge (~50% from center)
+  const minR = 0.27; // farm edge
+  const maxR = 0.47; // map edge (200m)
+  const r = minR + (1 - dist/200)*(maxR - minR); // closer = bigger r from center
+  // But animal is OUTSIDE farm so when dist=0 it is at farm boundary (r=minR)
+  // and when dist=200 it is at map edge (r=maxR) — actually reverse:
+  // Large dist = far from farm = near map edge
+  const rr = minR + (dist/200)*(maxR - minR);
+  const rad = angleDeg * Math.PI/180;
+  const px = 50 + rr*100*Math.cos(rad);
+  const py = 50 + rr*100*0.55*Math.sin(rad); // 0.55 because map is wider than tall
+  dot.style.left=px+'%'; dot.style.top=py+'%'; dot.style.display='block';
+  lbl.style.left=(px+2)+'%'; lbl.style.top=(py-5)+'%';
+  lbl.textContent=dist+'m from boundary'; lbl.style.display='block';
+}
+ 
+// Activate/deactivate step
+function setStep(n, state){ // state: 'active','done','alert','off'
+  const el = document.getElementById('step'+n);
+  el.className = 'step' + (state==='active'?' active':state==='done'?' done':state==='alert'?' alert-step':'');
+}
+function resetSteps(){ for(let i=1;i<=7;i++) setStep(i,'off'); }
+ 
+function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
+ 
+async function runDemo(species, emoji, conf, dist){
+  resetSteps();
+  detCount++; deterCount++;
+  document.getElementById('stDet').textContent=detCount;
+  document.getElementById('stDeter').textContent=deterCount;
+  const time = new Date().toLocaleTimeString();
+  const angle = 30 + Math.random()*300;
+  const zones = ['North Field','South Boundary','East Perimeter','West Gate'];
+  const zone = zones[Math.floor(Math.random()*4)];
+  const minutesToBoundary = Math.max(1, Math.ceil(dist/50));
+ 
+  // STEP 1 — Acoustic
+  setStep(1,'active');
+  document.getElementById('out1').textContent = `⚠ ${species} sound detected · ~${dist}m from boundary`;
+  document.getElementById('pAcoustic').textContent='🎙 ACOUSTIC: DETECTED';
+  document.getElementById('pAcoustic').className='pill hot';
+  setDist(dist); placeOnMap(angle, dist);
+  addLog('w',time,`🎙 Acoustic sensor triggered — unusual sound`,`Estimated distance: ~${dist}m from farm boundary`);
+  await delay(1000);
+ 
+  // STEP 2 — Motion
+  setStep(1,'done'); setStep(2,'active');
+  document.getElementById('pMotion').textContent='📡 MOTION: DETECTED';
+  document.getElementById('pMotion').className='pill '+(dist<=120?'hot':'warn');
+  document.getElementById('out2').textContent = dist<=120 ? '✔ Movement confirmed — animal approaching fast!' : '✔ Movement detected · Animal still far · Monitoring';
+  addLog('w',time,`📡 PIR motion sensor triggered`,`Confirmed real movement · Not a false alarm`);
+  await delay(900);
+ 
+  // STEP 3 — Camera
+  setStep(2,'done'); setStep(3,'active');
+  document.getElementById('pCamera').textContent='📷 CAMERA: RECORDING';
+  document.getElementById('pCamera').className='pill on';
+  document.getElementById('out3').textContent='📷 Camera ON · IR night mode · Frame captured';
+  addLog('',time,`📷 Camera activated`,`IR mode active · Capturing image for AI analysis`);
+  await delay(900);
+ 
+  // STEP 4 — AI
+  setStep(3,'done'); setStep(4,'active');
+  document.getElementById('out4').textContent=`🧠 Analyzing... YOLO v8 running...`;
+  await delay(700);
+ 
+  // Confidence build
+  let c=0;
+  const iv=setInterval(()=>{
+    c=Math.min(c+4,conf);
+    document.getElementById('confFill').style.width=c+'%';
+    document.getElementById('confNum').textContent=c+'%';
+    if(c>=conf)clearInterval(iv);
+  },35);
+  await delay(900);
+ 
+  document.getElementById('out4').textContent=`✅ ${emoji} ${species} identified · Confidence: ${conf}%`;
+ 
+  // Show detect card
+  document.getElementById('detEmoji').textContent=emoji;
+  document.getElementById('detName').textContent=species;
+  document.getElementById('detDist').textContent=`⚠ ${dist}m from boundary — APPROACHING FARM`;
+  document.getElementById('detTime').textContent=`Detected at ${time} · ${zone}`;
+  document.getElementById('timeEst').textContent=`⏱ ~${minutesToBoundary} min to boundary`;
+  document.getElementById('detectCard').classList.add('show');
+  setStep(4,'done'); setStep(5,'active');
+  await delay(800);
+ 
+  // STEP 5 — Alert
+  document.getElementById('out5').textContent=`📩 ${species} detected · ${zone} · ${dist}m · Conf: ${conf}%`;
+  const banner = document.getElementById('alertBanner');
+  banner.textContent=`🚨 ${species.toUpperCase()} DETECTED — ${dist}m FROM BOUNDARY! ALERT SENT!`;
+  banner.style.display='block';
+  setTimeout(()=>banner.style.display='none', 5000);
+  addLog('d',time,`🚨 ${emoji} ${species} — ${conf}% confidence`,`📍 ${zone} · ${dist}m from boundary · ~${minutesToBoundary} min ETA`);
+  await delay(800);
+ 
+  // STEP 6 — Notify
+  setStep(5,'done'); setStep(6,'active');
+  document.getElementById('out6').textContent=`📱 ${zone} · ${time} · SMS+Telegram sent to farmer + community`;
+  showTg(`🚨 ANIMAL ALERT!\n\n${emoji} ${species} Detected!\n\n📍 Location: ${zone}\n📏 Distance: ${dist}m from your farm\n⏱ ETA to boundary: ~${minutesToBoundary} min\n🎯 AI Confidence: ${conf}%\n🔊 Deterrent: ACTIVATED\n🕐 Time: ${time}\n\n👉 Go to ${zone} immediately!`);
+  await delay(900);
+ 
+  // STEP 7 — Deterrent
+  setStep(6,'done'); setStep(7,'alert-step');
+  addLog('',time,`💡 Deterrent activated`,`Sound alarm + flash lights ON · ${zone}`);
+}
+ 
+function addLog(type,time,msg,detail){
+  const wrap=document.getElementById('logWrap');
+  const d=document.createElement('div');
+  d.className='log-item'+(type==='d'?' d':type==='w'?' w':'');
+  d.innerHTML=`<div class="log-t">${time}</div><div class="log-m">${msg}</div><div class="log-d">${detail}</div>`;
+  wrap.prepend(d);
+}
+ 
+function resetAll(){
+  resetSteps();
+  document.getElementById('detectCard').classList.remove('show');
+  document.getElementById('animalDot').style.display='none';
+  document.getElementById('mapLbl').style.display='none';
+  document.getElementById('alertBanner').style.display='none';
+  document.getElementById('confFill').style.width='0%';
+  document.getElementById('confNum').textContent='0%';
+  setDist(null);
+  ['pAcoustic','pMotion'].forEach(id=>{
+    const p=document.getElementById(id);
+    p.className='pill on';
+  });
+  document.getElementById('pAcoustic').textContent='🎙 ACOUSTIC: IDLE';
+  document.getElementById('pMotion').textContent='📡 MOTION: STANDBY';
+  document.getElementById('pCamera').className='pill';
+  document.getElementById('pCamera').textContent='📷 CAMERA: OFF';
+  addLog('',new Date().toLocaleTimeString(),'✅ System reset — all sensors nominal','Monitoring 200m perimeter');
+}
+ 
+function testTg(){
+  showTg('✅ TEST ALERT\nSystem is online!\n\n🎙 Acoustic: Active\n📡 PIR Sensor: Active\n📷 Camera: Standby\n🛰 GPS: Locked\n☀️ Solar Power: 97%\n\nYour farm is protected. 👍');
+}
+function showTg(msg){
+  document.getElementById('tgBody').textContent=msg;
+  const n=document.getElementById('tgNotif');
+  n.classList.add('show');
+  setTimeout(()=>n.classList.remove('show'),9000);
+}
+</script>
+</body>
+</html>
+ 
